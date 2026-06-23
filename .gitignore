@@ -1,0 +1,13 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Data: re-downloadable from CDC and rebuildable via the scripts.
+data/raw/
+data/nhanes_cohort.csv
+*.part
+
+# OS
+.DS_Store
