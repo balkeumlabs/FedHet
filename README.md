@@ -15,7 +15,7 @@ Reproducible research artifact for a Balkeum Labs paper submitted to **AIBThings
 > that feature — recovers **+13.9 points**, lands **within 1.6 points of the
 > centralized upper bound**, and converges in **2 rounds instead of 26** — even
 > though only ~25% of homes own the top-tier (CGM) device. All measured on a
-> consumer CPU: **~0.3 s**, **~10 J** of real package energy, **44 bytes** uplink
+> consumer CPU: **~0.3 s**, **~6.6 J** of real package energy, **44 bytes** uplink
 > per home per round, and **zero raw-data egress**.
 
 ## TL;DR results
