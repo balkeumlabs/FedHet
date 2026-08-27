@@ -32,7 +32,7 @@ def dirichlet_label_partition(y: np.ndarray, n_homes: int, alpha: float,
     """Assign sample indices to homes with a per-class Dirichlet split (non-IID)."""
     idx_by_class = {c: rng.permutation(np.where(y == c)[0]) for c in np.unique(y)}
     shards: list[list[int]] = [[] for _ in range(n_homes)]
-    for c, idx in idx_by_class.items():
+    for _cls, idx in idx_by_class.items():
         props = rng.dirichlet([alpha] * n_homes)
         cuts = (np.cumsum(props) * len(idx)).astype(int)[:-1]
         for h, part in enumerate(np.split(idx, cuts)):
@@ -55,7 +55,7 @@ def make_homes(Xtr: np.ndarray, ytr: np.ndarray, feat_order: list[str],
     shards = dirichlet_label_partition(ytr, n_homes, alpha, rng)
     tiers = assign_tiers(n_homes, tier_mix, rng)
     homes = []
-    for i, (idx, tier) in enumerate(zip(shards, tiers)):
+    for i, (idx, tier) in enumerate(zip(shards, tiers, strict=True)):
         if len(idx) == 0:
             continue
         mask = feature_mask(int(tier), feat_order)

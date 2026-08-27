@@ -11,3 +11,10 @@ data/nhanes_cohort.csv
 
 # OS
 .DS_Store
+
+# Local reproduction runs (see scripts/reproduce.sh).
+runs/
+
+# Test / lint caches
+.pytest_cache/
+.ruff_cache/

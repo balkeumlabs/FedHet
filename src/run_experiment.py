@@ -1,4 +1,4 @@
-"""End-to-end experiment: federated CVD risk scoring under device-tier heterogeneity.
+"""End-to-end experiment: federated diabetes-risk scoring under device-tier heterogeneity.
 
 Produces results/*.json, results/*.csv and figures/*.png. CPU-only; runs on a
 consumer edge node (developed on an AMD Ryzen 5 5500GT, 62 GB RAM, no GPU used).
@@ -53,8 +53,16 @@ def main() -> int:
     ap.add_argument("--lr", type=float, default=0.5)
     ap.add_argument("--l2", type=float, default=1e-4)
     ap.add_argument("--cen-epochs", type=int, default=400)
+    ap.add_argument("--out-dir", type=Path, default=RESULTS,
+                    help="where to write results.json / comparison.csv "
+                         "(default: %(default)s, which overwrites the published "
+                         "artifacts; point elsewhere to keep them)")
+    ap.add_argument("--fig-dir", type=Path, default=FIGS,
+                    help="where to write the figures (default: %(default)s)")
     args = ap.parse_args()
-    RESULTS.mkdir(exist_ok=True); FIGS.mkdir(exist_ok=True)
+    out_dir, fig_dir = args.out_dir, args.fig_dir
+    out_dir.mkdir(parents=True, exist_ok=True)
+    fig_dir.mkdir(parents=True, exist_ok=True)
 
     # Tier adoption mix (mirrors product: most homes Core, fewer Total Vital).
     tier_mix = {1: 0.5, 2: 0.3, 3: 0.2}
@@ -73,11 +81,11 @@ def main() -> int:
     mean, std = federated_scaler(homes, feat_order)
     for h in homes:
         h.X = apply_scaler(h.X, h.mask, mean, std)
-    full = np.ones(len(feat_order))
     Xte = (Xte_raw - mean) / std
     Xtr = (Xtr_raw - mean) / std
 
     def eval_fn(model, restrict):
+        """Per-round test AUROC, for the convergence curve (Fig. 2)."""
         return roc_auc_score(yte, model.proba(Xte))
 
     print(f"n_train={len(ytr)} n_test={len(yte)} homes={len(homes)} "
@@ -138,12 +146,15 @@ def main() -> int:
             sweep[m].append(float(roc_auc_score(yte, mod.proba(Xte_s))))
 
     # --- assemble + save ---
+    # Output paths are a runtime choice, not part of the experiment's definition,
+    # so they are excluded from the recorded config.
+    cfg = {k: v for k, v in vars(args).items() if k not in ("out_dir", "fig_dir")}
     out = {
-        "config": vars(args) | {"tier_mix": tier_mix,
+        "config": cfg | {"tier_mix": tier_mix,
                                 "features": feat_order,
                                 "n_train": int(len(ytr)),
                                 "n_test": int(len(yte)),
-                                "cvd_prevalence": float(y.mean()),
+                                "label_prevalence": float(y.mean()),
                                 "tier_counts": tier_counts},
         "metrics": {k: {kk: vv for kk, vv in v.items() if kk != "history"}
                     for k, v in results.items()},
@@ -156,18 +167,18 @@ def main() -> int:
                      "processor": platform.processor(),
                      "energy_source": costs["tieraware_fl"].energy_source},
     }
-    (RESULTS / "results.json").write_text(json.dumps(out, indent=2))
+    (out_dir / "results.json").write_text(json.dumps(out, indent=2))
 
     # tidy CSV of the headline comparison
     rows = []
     for k in ["centralized", "intersection_fl", "naive_union_fl", "tieraware_fl"]:
         rows.append({"method": k, **results[k], **vars(costs[k])})
     pd.DataFrame(rows).drop(columns=["history"]).to_csv(
-        RESULTS / "comparison.csv", index=False)
+        out_dir / "comparison.csv", index=False)
 
     _print_summary(results, costs, comms, contrib)
-    make_figures(results, histories, sweep, sweep_homes, contrib, comms, costs)
-    print(f"\nWrote {RESULTS}/results.json, comparison.csv and {FIGS}/*.png")
+    make_figures(results, histories, sweep, sweep_homes, contrib, costs, fig_dir)
+    print(f"\nWrote {out_dir}/results.json, comparison.csv and {fig_dir}/*.png")
     return 0
 
 
@@ -199,8 +210,11 @@ def _print_summary(results, costs, comms, contrib):
               f"product_credit={t['product_credit']:.2f}")
 
 
-def make_figures(results, histories, sweep, sweep_homes, contrib, comms, costs):
+def make_figures(results, histories, sweep, sweep_homes, contrib, costs, fig_dir):
     plt.rcParams.update({"font.size": 11, "figure.dpi": 150})
+    styles = {"intersection_fl": ("#9e9e9e", "-"),
+              "naive_union_fl": ("#e0884e", "-"),
+              "tieraware_fl": ("#2e8b57", "-")}
 
     # Fig 1: headline AUROC bars
     order = ["centralized", "intersection_fl", "naive_union_fl", "tieraware_fl"]
@@ -208,28 +222,25 @@ def make_figures(results, histories, sweep, sweep_homes, contrib, comms, costs):
     colors = ["#444", "#9e9e9e", "#e0884e", "#2e8b57"]
     fig, ax = plt.subplots(figsize=(6.4, 3.8))
     bars = ax.bar([PRETTY[k] for k in order], aucs, color=colors)
-    for b, a in zip(bars, aucs):
+    for b, a in zip(bars, aucs, strict=True):
         ax.text(b.get_x() + b.get_width() / 2, a + 0.003, f"{a:.3f}",
                 ha="center", va="bottom", fontsize=10)
     ax.set_ylabel("Test AUROC")
     ax.set_ylim(min(aucs) - 0.03, max(aucs) + 0.03)
     ax.set_title("Diabetes risk scoring under device-tier heterogeneity")
-    fig.tight_layout(); fig.savefig(FIGS / "fig1_auroc.png"); plt.close(fig)
+    fig.tight_layout(); fig.savefig(fig_dir / "fig1_auroc.png"); plt.close(fig)
 
     # Fig 2: convergence
     fig, ax = plt.subplots(figsize=(6.4, 3.8))
     cen = results["centralized"]["auroc"]
     ax.axhline(cen, ls="--", c="#444", label="Centralized (upper bound)")
-    styles = {"intersection_fl": ("#9e9e9e", "-"),
-              "naive_union_fl": ("#e0884e", "-"),
-              "tieraware_fl": ("#2e8b57", "-")}
     for m, hist in histories.items():
         c, ls = styles[m]
         ax.plot(range(1, len(hist) + 1), hist, ls, color=c,
                 label=PRETTY[m].replace("\n", " "))
     ax.set_xlabel("Federated round"); ax.set_ylabel("Test AUROC")
     ax.set_title("Convergence"); ax.legend(fontsize=8.5)
-    fig.tight_layout(); fig.savefig(FIGS / "fig2_convergence.png"); plt.close(fig)
+    fig.tight_layout(); fig.savefig(fig_dir / "fig2_convergence.png"); plt.close(fig)
 
     # Fig 3: tier contribution vs product credit ladder
     tiers = contrib["tiers"]
@@ -246,7 +257,7 @@ def make_figures(results, histories, sweep, sweep_homes, contrib, comms, costs):
     ax.set_title("Tier contribution vs. premium-credit ladder")
     l1, la1 = ax.get_legend_handles_labels(); l2, la2 = ax2.get_legend_handles_labels()
     ax.legend(l1 + l2, la1 + la2, fontsize=8.5, loc="upper left")
-    fig.tight_layout(); fig.savefig(FIGS / "fig3_contribution.png"); plt.close(fig)
+    fig.tight_layout(); fig.savefig(fig_dir / "fig3_contribution.png"); plt.close(fig)
 
     # Fig 4: scaling sweep
     fig, ax = plt.subplots(figsize=(6.4, 3.8))
@@ -258,7 +269,7 @@ def make_figures(results, histories, sweep, sweep_homes, contrib, comms, costs):
                label="Centralized")
     ax.set_xlabel("Number of edge nodes (homes)"); ax.set_ylabel("Test AUROC")
     ax.set_title("Scaling across federated nodes"); ax.legend(fontsize=8.5)
-    fig.tight_layout(); fig.savefig(FIGS / "fig4_scaling.png"); plt.close(fig)
+    fig.tight_layout(); fig.savefig(fig_dir / "fig4_scaling.png"); plt.close(fig)
 
 
 if __name__ == "__main__":

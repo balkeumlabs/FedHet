@@ -27,7 +27,7 @@
     ],
     "n_train": 7488,
     "n_test": 1872,
-    "cvd_prevalence": 0.1498931623931624,
+    "label_prevalence": 0.1498931623931624,
     "tier_counts": {
       "1": 25,
       "2": 19,

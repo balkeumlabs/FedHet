@@ -41,6 +41,6 @@ def tier_contributions(Xtr, ytr, Xte, yte, feat_order, *, epochs, lr, l2):
     # cumulative value of owning up to tier t (sum of marginal gains)
     cumval = np.cumsum(gains)
     reward = cumval / cumval[-1] if cumval[-1] > 0 else np.ones(len(rows))
-    for r, rv in zip(rows, reward):
+    for r, rv in zip(rows, reward, strict=True):
         r["learned_reward_share"] = float(rv)
     return {"profile_auc": base_auc, "tiers": rows}

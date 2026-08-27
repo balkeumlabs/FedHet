@@ -47,7 +47,19 @@ def apply_scaler(X: np.ndarray, mask: np.ndarray, mean, std) -> np.ndarray:
 # ----- aggregation ----------------------------------------------------------
 def _aggregate(global_model: LinearModel, updates, restrict: np.ndarray | None,
                per_feature: bool) -> LinearModel:
-    """updates: list of (model, n, mask). Returns new global model."""
+    """Sample-weighted FedAvg. ``updates`` is a list of ``(model, n, mask)``.
+
+    ``per_feature=False`` reproduces plain FedAvg: every weight is averaged over
+    ALL participating homes, so homes that cannot observe a feature (and therefore
+    hold that weight at its initial value) still dilute it.
+
+    ``per_feature=True`` is the tier-aware rule: weight *j* is averaged only over
+    the homes whose devices actually observe feature *j*, i.e. the denominator is
+    the participating sample count for that feature rather than the global one.
+
+    The bias has no feature, so it is always averaged over all homes. A feature
+    that no participating home observes keeps its previous global value.
+    """
     D = len(global_model.w)
     w_num = np.zeros(D); w_den = np.zeros(D)
     b_num = 0.0; b_den = 0.0
@@ -59,8 +71,9 @@ def _aggregate(global_model: LinearModel, updates, restrict: np.ndarray | None,
         w_den += n * weight
         b_num += n * m.b
         b_den += n
-    w_den = np.where(w_den > 0, w_den, 1.0)
-    new_w = np.where(w_den > 0, w_num / w_den, global_model.w)
+    observed = w_den > 0
+    new_w = np.where(observed, w_num / np.where(observed, w_den, 1.0),
+                     global_model.w)
     return LinearModel(new_w, b_num / max(b_den, 1.0))
 
 
@@ -91,7 +104,7 @@ def train_federated(homes: list[Home], feat_order: list[str], *, method: str,
         raise ValueError(method)
 
     history = []
-    for r in range(rounds):
+    for _round in range(rounds):
         if clients_per_round and clients_per_round < len(homes):
             sel = rng.choice(len(homes), clients_per_round, replace=False)
             cohort = [homes[i] for i in sel]

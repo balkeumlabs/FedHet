@@ -1,0 +1,15 @@
+# Lint configuration for CI. The style here is deliberately close to the paper's
+# code listings: compact, NumPy-flavoured, no framework scaffolding.
+line-length = 90
+target-version = "py311"
+
+[lint]
+select = ["E", "W", "F", "B", "C4", "UP"]
+ignore = [
+  "E702",  # `a(); b()` on one line: used deliberately in the plotting code.
+  "E741",  # single-letter names (l1, l2) match the paper's notation.
+]
+
+[lint.per-file-ignores]
+# Tests reach into private helpers on purpose to pin the aggregation arithmetic.
+"tests/*" = ["E501"]

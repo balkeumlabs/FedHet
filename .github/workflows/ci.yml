@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Fast, hermetic, no network beyond installing the pinned dependencies.
+  # Unit tests cover code mechanics (masking, aggregation arithmetic, federated
+  # standardization, partitioning) plus consistency between README.md and the
+  # committed results/results.json. They never touch the CDC NHANES server.
+  tests:
+    name: tests (pinned deps, Python 3.12)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Install pinned dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+
+      - name: Lint
+        run: |
+          python -m pip install ruff==0.14.5
+          ruff check src scripts tests
+
+      - name: Unit tests
+        run: python -m pytest
+
+      - name: Self-check the published results
+        run: python scripts/verify_results.py
+
+  # Non-blocking: warns when a new upstream release changes behaviour, without
+  # turning the badge red for something outside this repository's control.
+  latest-deps:
+    name: tests (latest deps, drift check)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.x"
+
+      - name: Install latest dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy pandas scikit-learn scipy matplotlib requests pyreadstat pytest
+
+      - name: Unit tests
+        run: python -m pytest

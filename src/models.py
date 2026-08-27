@@ -15,7 +15,7 @@ class LinearModel:
     w: np.ndarray  # (D,)
     b: float
 
-    def copy(self) -> "LinearModel":
+    def copy(self) -> LinearModel:
         return LinearModel(self.w.copy(), float(self.b))
 
     def logits(self, X: np.ndarray) -> np.ndarray:
@@ -30,8 +30,15 @@ def init_model(dim: int) -> LinearModel:
 
 
 def _sigmoid(z: np.ndarray) -> np.ndarray:
-    return np.where(z >= 0, 1.0 / (1.0 + np.exp(-z)),
-                    np.exp(z) / (1.0 + np.exp(z)))
+    """Overflow-free logistic function.
+
+    ``np.where`` evaluates both branches, so the usual piecewise form still
+    computes ``exp(+|z|)`` and overflows for large-magnitude logits. Factoring the
+    shared term as ``exp(-|z|)`` keeps every exponent non-positive while returning
+    exactly the same values.
+    """
+    e = np.exp(-np.abs(z))
+    return np.where(z >= 0, 1.0 / (1.0 + e), e / (1.0 + e))
 
 
 def local_train(model: LinearModel, X: np.ndarray, y: np.ndarray,

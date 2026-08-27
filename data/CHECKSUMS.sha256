@@ -1,0 +1,24 @@
+# SHA-256 checksums for the exact data artifacts used in the published run.
+# Downloaded from the CDC NHANES public server on 2026-06-23.
+#
+# Verify raw downloads (from the repository root):
+#     sha256sum -c data/CHECKSUMS.sha256
+#
+# A mismatch on a data/raw/*.xpt file means CDC has re-released that component
+# since this study was run; a mismatch on nhanes_cohort.csv means the build
+# step produced a different cohort. Either invalidates an exact-match
+# reproduction -- see README, 'Verifying a reproduction'.
+
+d31da84e14212b4e58e8340598a5b8e2144fac83333563e966eb1b332e4141d6  data/raw/BMX_I.xpt
+8d675e42d8826ac98714b2c3dd4c5138a5e353fb4424f7eff5e6db4a01ce838a  data/raw/BMX_J.xpt
+45d5c9fa101ccc6da82241bd45c99611595e699665eed2cfed232e9070b52cc1  data/raw/BPX_I.xpt
+f98f1d9a4c18173e715c749b4294f6f1525140d5ad5751316bb17cc038fb3423  data/raw/BPX_J.xpt
+c9297c6c37ae8f78f29be9568fa2a03cf3b112616a39afee04030fc775a66a0d  data/raw/DEMO_I.xpt
+c0b46e0345ea19404928656277c8b0d10b0cca348a9b2fe4fc3c67e8b7ee73ec  data/raw/DEMO_J.xpt
+e87587479b29f175b63eee5dd40d582837e3e3fe2665503012085eefdb978e0d  data/raw/DIQ_I.xpt
+1ecbf5360dfc331d1efbf32198553dc30e9a1f4cff0a907ed30ca72bac797f89  data/raw/DIQ_J.xpt
+e4bc626cd12f6057c7806aef4f85874c9bf1407a7480d6621a4af142260addd2  data/raw/GHB_I.xpt
+35f07094573a0061a03ed609a5a363b34eb1b1c7065d1623b43d72e132a8a654  data/raw/GHB_J.xpt
+529ce1c407e99dce937ca75d14c8c630e0c9c30a4a9a851760cd2884bbb28fe0  data/raw/SMQ_I.xpt
+73c3708e540cbf520a566508aa629c3e4ba53cad77dae9388ca36384646455f4  data/raw/SMQ_J.xpt
+db5cc7179bd31650a3c68a1afe393aa38eac55e56143451422f2e0a328804595  data/nhanes_cohort.csv

@@ -1,0 +1,59 @@
+cff-version: 1.2.0
+title: >-
+  FedHet: Device-Tier Heterogeneity in Federated Health-Risk Scoring
+message: >-
+  If you use this software or its results, please cite the accompanying
+  conference paper (preferred-citation).
+type: software
+authors:
+  - given-names: Eli
+    family-names: Yune
+    affiliation: Balkeum Labs
+    email: eli.yune@balkeumlabs.ai
+  - given-names: Umer
+    family-names: Majeed
+    affiliation: Balkeum Labs
+    email: umer.majeed@balkeumlabs.ai
+  - given-names: Mahesh
+    family-names: Balan
+    affiliation: Claremont Graduate University
+    email: balan.mahesh@cgu.edu
+repository-code: "https://github.com/balkeumlabs/FedHet"
+abstract: >-
+  Reproducible research artifact for a measured study of device-tier feature
+  heterogeneity in federated health-risk scoring. Homes in a consumer edge-health
+  deployment buy different hardware tiers and can therefore measure different
+  biometrics, which breaks the shared-feature-space assumption of standard
+  federated averaging. Using real NHANES survey data only, the artifact compares
+  a centralized upper bound, intersection FedAvg, naive union FedAvg, and a
+  tier-aware per-feature participation-weighted aggregation rule, and reports
+  measured CPU time, RAPL package energy, and uplink bytes on a consumer CPU.
+keywords:
+  - federated learning
+  - feature heterogeneity
+  - edge computing
+  - digital health
+  - NHANES
+  - energy measurement
+license: MIT
+version: "1.0.0"
+date-released: "2026-06-24"
+preferred-citation:
+  type: conference-paper
+  title: >-
+    Device-Tier Heterogeneity in Federated Health-Risk Scoring: A Measured Study
+    on Consumer Edge Nodes
+  authors:
+    - given-names: Eli
+      family-names: Yune
+      affiliation: Balkeum Labs
+    - given-names: Umer
+      family-names: Majeed
+      affiliation: Balkeum Labs
+    - given-names: Mahesh
+      family-names: Balan
+      affiliation: Claremont Graduate University
+  collection-title: >-
+    2026 IEEE International Conference on Artificial Intelligence, Blockchain,
+    and Internet of Things (AIBThings)
+  year: 2026
